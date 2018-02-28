@@ -1,5 +1,5 @@
 #encoding: utf-8
-module JoowingRmi::Definition
+module SceneryRmi::Definition
   class AttributeDefinition < Struct.new(:name, :type, :array, :default_value)
     def initialize(*args)
       options = args.extract_options!

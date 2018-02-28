@@ -1,11 +1,11 @@
 #encoding: utf-8
 
-module JoowingRmi
+module SceneryRmi
   class Origin
     include Enumerable
 
     class JCollection < ::WillPaginate::Collection
-      include JoowingRmi::Entity::ToListData
+      include SceneryRmi::Entity::ToListData
     end
 
     def initialize(rmi_klass)

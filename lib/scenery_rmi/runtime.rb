@@ -1,8 +1,8 @@
 #encoding: utf-8
 
-module JoowingRmi
+module SceneryRmi
   #
-  # = Joowing 远程API自动加载机制
+  # = Scenery 远程API自动加载机制
   #
   # 应用开发者不需要在Bundle里面显性依赖特定的API Gem
   # 服务的API信息,由服务的提供者提供, 由使用者在运行态加载
@@ -33,8 +33,8 @@ module JoowingRmi
         name = key.gsub('.', '/')
         path = "lib/dsl/#{name}.rb"
         unless File.exist?(path)
-          backend = JoowingRmi::Manager.application.backend
-          message = "Current subsystem has't configure JoowingRmi correctly"
+          backend = SceneryRmi::Manager.application.backend
+          message = "Current subsystem has't configure SceneryRmi correctly"
           return [404, {'content-type' => 'text/plain', 'content-length' => message.bytesize.to_s}, [message] ] if backend.blank?
           path2 = "lib/dsl/#{backend}.rb"
           unless File.exist?(path2)
@@ -58,7 +58,7 @@ module JoowingRmi
         keys = name.split('.')
         backend = keys.shift
         name = keys.join('.')
-        http = JoowingRmi::ConnectionManager.manager.connection_pool(backend)
+        http = SceneryRmi::ConnectionManager.manager.connection_pool(backend)
         # 根据实际情况，动态通过两种模式获取api
         begin
           with_backend = self.modes[backend]

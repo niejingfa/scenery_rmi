@@ -1,5 +1,5 @@
 #encoding: utf-8
-module JoowingRmi::Definition
+module SceneryRmi::Definition
   # 
   # == 构建一个动作定义
   # method/name是必须的，其他的属性都是可选的，都有默认值

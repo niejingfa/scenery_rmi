@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-namespace :joowing do
+namespace :scenery do
   namespace :api do
 
     @buffer = StringIO.new
@@ -21,7 +21,7 @@ namespace :joowing do
       backends << module_definition.backend if module_definition.backend
       module_definition.children.each do |ns|
         names << ns.name
-        if ns.is_a? JoowingRmi::Definition::ModuleDefinition
+        if ns.is_a? SceneryRmi::Definition::ModuleDefinition
           n,b = names_and_backends(ns)
           names.concat n
           backends.concat b
@@ -121,7 +121,7 @@ namespace :joowing do
 
     desc 'Export API,Env: module|class|backend|attr|action|desc'
     task :dump do
-      require 'joowing_rmi_syntax'
+      require 'scenery_rmi_syntax'
       # 根据module名称过滤
       m = ENV['module'] || ''
       # 根据class 名称过滤
@@ -133,18 +133,18 @@ namespace :joowing do
       # 是否显示动作
       show_action = ENV['action'] != 'false'
       filter = desc_filter(m, c, backend, show_attr, show_action)
-      output 'Export Joowing API %s', filter
-      JoowingRmi.joowing_platform_spec.update('joowing_rmi' => {redis: {host: '127.0.0.1', port: 6379}})
-      JoowingRmi.initialize_rmi
+      output 'Export Scenery API %s', filter
+      SceneryRmi.scenery_platform_spec.update('scenery_rmi' => {redis: {host: '127.0.0.1', port: 6379}})
+      SceneryRmi.initialize_rmi
       current_module_name = nil
-      definitions = JoowingRmi::Manager.application.definitions
+      definitions = SceneryRmi::Manager.application.definitions
       keys = definitions.keys
       keys.sort!
       keys.each do |key|
         definition = definitions[key]
         count = key.to_s.count '.'
         indent_space = '  ' * count
-        if definition.is_a? JoowingRmi::Definition::ModuleDefinition
+        if definition.is_a? SceneryRmi::Definition::ModuleDefinition
           current_module_name = key
           next if not_meet(key, m)
           names, backends = names_and_backends(definition)
@@ -166,4 +166,4 @@ namespace :joowing do
       end # module definition
     end # task :dump
   end # namespace :api
-end # namespace :joowing
+end # namespace :scenery

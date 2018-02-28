@@ -1,5 +1,5 @@
 #encoding: utf-8
-module JoowingRmi
+module SceneryRmi
   class ConnectionManager
     def self.manager
       @manager ||= new
@@ -35,7 +35,7 @@ module JoowingRmi
 
 
     def thread_key_for_name(name)
-      "joowing_rmi_#{name}"
+      "scenery_rmi_#{name}"
     end
 
     def key_for_uri(uri)
@@ -47,7 +47,7 @@ module JoowingRmi
     end
 
     def rmi_application
-      @rmi_application ||= JoowingRmi::Manager.application
+      @rmi_application ||= SceneryRmi::Manager.application
     end
   end
 end

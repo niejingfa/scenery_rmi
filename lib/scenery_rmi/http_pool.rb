@@ -2,11 +2,11 @@
 require 'net/http'
 require 'faraday'
 
-module JoowingRmi
+module SceneryRmi
   class HttpPool
 
     def self.logger
-      @logger ||= JoowingLogger.allocate('rmi.pool')
+      @logger ||= SceneryLogger.allocate('rmi.pool')
     end
 
     def self.logger=(l)

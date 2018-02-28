@@ -1,13 +1,13 @@
 #encoding: utf-8
-module Joowing
+module Scenery
   #
-  # = 通用的joowing异常
+  # = 通用的scenery异常
   #
   # 各个FE/BE系统应该基于本异常建立自身的异常体系
   # 如，在 nebula-3 里面:
   #
   #     module Nebula
-  #       class NebulaError < ::Joowing::Error; end
+  #       class NebulaError < ::Scenery::Error; end
   #       class ClientSideError < NebulaError; end
   #       class ServerSideError < NebulaError; end
   #       class InternalError < ServerSideError; end
@@ -16,23 +16,23 @@ module Joowing
   #     end
   # 在 pomelo backend 里面，也可能会建立一套自身的异常体系
   #     module PomeloBackend
-  #       class Error < ::Joowing::Error; end
+  #       class Error < ::Scenery::Error; end
   #       class MobileSideError < Error; end
   #       class BackendError < Error; end
   #     end
   #
   # 在每个子系统的API中，会将异常，封装成为:
   #     {class: 'Nebula::AuthenticationError', ancestors: 'ClientSideError,NebulaError', code: ...}
-  # Joowing RMI生成的动态接口类，在调用时，如果返回的http status为400/500系列错误，会先检查 http body是否为这种异常信息，如果是，
+  # Scenery RMI生成的动态接口类，在调用时，如果返回的http status为400/500系列错误，会先检查 http body是否为这种异常信息，如果是，
   #     则会将该异常转存在如下namespace中的异常:
-  #     Joowing::Error::NebulaError::ClientSideError::AuthenticationError
+  #     Scenery::Error::NebulaError::ClientSideError::AuthenticationError
   #     这些异常，类的继承关系和作为常量的ns空间关系保持一致
   #
   # 而调用者，可以基于这些异常的这层关系，进行如下捕捉
   #
   #     begin
-  #       Joowing::Nebula::Session.login(user,pwd)
-  #     rescue Joowing::Error::NebulaError::ClientSideError => e
+  #       Scenery::Nebula::Session.login(user,pwd)
+  #     rescue Scenery::Error::NebulaError::ClientSideError => e
   #       # do some thing for this code branch
   #       # even throw it to outside be handled by client side
   #     end
@@ -71,11 +71,11 @@ module Joowing
     end
 
     #
-    # ==返回Error的子类的上级类路径，到Joowing::Error为止(不包括)
+    # ==返回Error的子类的上级类路径，到Scenery::Error为止(不包括)
     #
     def string_ancestors
       klasses = self.class.ancestors
-      klasses.delete_if{|klass| !klass.is_a?(Class) || ::Joowing::Error.ancestors.include?(klass)}
+      klasses.delete_if{|klass| !klass.is_a?(Class) || ::Scenery::Error.ancestors.include?(klass)}
       klasses.map! do |klass|
         name = klass.name
         name.gsub!(/[^:]+::/, '')
@@ -89,9 +89,9 @@ module Joowing
       #
       # ==动态创建子错误类型，并基于namespace结构进行继承
       #
-      #   这种自动创建的错误类型，是为了Joowing RMI的调用者，可以在不知道远端类实际体系的情况下的异常捕捉
+      #   这种自动创建的错误类型，是为了Scenery RMI的调用者，可以在不知道远端类实际体系的情况下的异常捕捉
       #
-      #   实现这个机制，需要远端类在序列化输出时，将自身的上级类名(一直到JoowingError)放在其ancestors属性中
+      #   实现这个机制，需要远端类在序列化输出时，将自身的上级类名(一直到SceneryError)放在其ancestors属性中
       #
       def const_missing(name)
         self.const_set(name.to_sym, Class.new(self))
@@ -129,9 +129,9 @@ module Joowing
 
   class << self
     # 自动根据DSL元信息构建相应的动态ActiveResource模型
-    #   应用于传统的采用 Joowing:: 开头访问远程API的场景
+    #   应用于传统的采用 Scenery:: 开头访问远程API的场景
     def const_missing(name)
-      JoowingRmi::Manager.application.joowing_autoload(self, name)
+      SceneryRmi::Manager.application.scenery_autoload(self, name)
     end
 
   end

@@ -1,5 +1,5 @@
 #encoding: utf-8
-module JoowingRmi::Entity::Helper
+module SceneryRmi::Entity::Helper
   module EntityAccessor
     def assign_entity(entity)
       @__jrmi_entity = entity

@@ -1,7 +1,7 @@
 #encoding: utf-8
-require 'joowing_logger'
+require 'scenery_logger'
 
-module JoowingRmi
+module SceneryRmi
 
   class Manager
     cattr_accessor :application, :last_description, :backend
@@ -13,9 +13,9 @@ module JoowingRmi
     def initialize(config = {})
       @config = config.symbolize_keys
       @definitions = {}
-      @logger = JoowingLogger.allocate('rmi')
+      @logger = SceneryLogger.allocate('rmi')
       @backends = {} # backend class name to enhanced BackendModule(or class, such as PomeloBackend)
-      @regexp = /^(joowing)\./
+      @regexp = /^(scenery)\./
       @after_model_blks = {}
     end
 
@@ -31,7 +31,7 @@ module JoowingRmi
         # 从远端加载的, 肯定有明确的backend
         prefix = module_or_class.backend.to_s + '.'
       else
-        prefix = 'joowing.'
+        prefix = 'scenery.'
       end
       full_name = prefix + full_name unless full_name.starts_with?(prefix)
       self.logger.debug "Store #{type_name} config for #{full_name}"
@@ -47,7 +47,7 @@ module JoowingRmi
           key = backend + '.' + name
         end
       else
-        key = 'joowing.' + name
+        key = 'scenery.' + name
       end
       key ||= name
       definition = self.definitions[key]
@@ -57,8 +57,8 @@ module JoowingRmi
 
     def initialize_backend_constants
       # 防止重复初始化
-      return if self.backends['Joowing']
-      self.backends['Joowing'] = ::Joowing
+      return if self.backends['Scenery']
+      self.backends['Scenery'] = ::Scenery
       (self.config[:backend] || {}).keys.each do |backend|
         # nebula 被命名为 mango_portal
         next if backend.to_s == 'nebula'
@@ -73,7 +73,7 @@ module JoowingRmi
     end
 
     # fork 子进程之后, 不需要重新调用本方法, 只要touch一下listener thread
-    #  JoowingRmi::Manager.application.listener_thread
+    #  SceneryRmi::Manager.application.listener_thread
     # 子进程一旦touch该变量, 就会在子进程中重新执行相应的代码
     # 而redis连接也会被自动建立/维护
     def start_redis_subscription
@@ -83,25 +83,25 @@ module JoowingRmi
       # 初始化一个线程,负责接收redis的那边广播过来的API变更
       self.listener_thread = Thread.start do
         # 这个线程里面, 必须使用单独用于接收callback的redis对象, 因为该对象会被subscription独占
-        client_name = "joowing_rmi_listener_of_#{$$}"
+        client_name = "scenery_rmi_listener_of_#{$$}"
         begin
           subscribe_to_redis client_name
         rescue Redis::BaseConnectionError => e
-          self.logger.info "Subscription to joowing_rmi.* as #{client_name} is broken by: #{e.message}"
+          self.logger.info "Subscription to scenery_rmi.* as #{client_name} is broken by: #{e.message}"
           sleep 60 # 休息1分钟,而后尝试重新建立链接
           retry
         end
       end
-      self.logger.info("#{listener_thread} is response for joowing_rmi api changed event with a separate redis connection")
+      self.logger.info("#{listener_thread} is response for scenery_rmi api changed event with a separate redis connection")
     end
 
     def subscribe_to_redis(client_name)
-      self.logger.info 'Subscribing joowing_rmi.* as ' + client_name
+      self.logger.info 'Subscribing scenery_rmi.* as ' + client_name
       redis_listener = Redis.new(config[:redis].symbolize_keys)
       redis_listener.call 'client', 'setname', client_name rescue nil
-      redis_listener.psubscribe 'joowing_rmi.*' do |subscription|
+      redis_listener.psubscribe 'scenery_rmi.*' do |subscription|
         subscription.pmessage do |_, channel, version|
-          config_name = channel['joowing_rmi.'.length..-1]
+          config_name = channel['scenery_rmi.'.length..-1]
           # self.logger.debug "Got #{config_name} changed to #{version}"
           self.reload_api_if_necessary(config_name, version)
         end
@@ -154,21 +154,21 @@ module JoowingRmi
       if backend_prefix
         container.backend.to_s + '.' + full_name
       else
-        'joowing.' + full_name
+        'scenery.' + full_name
       end
     end
 
-    def joowing_autoload(container, name, backend_prefix = false)
+    def scenery_autoload(container, name, backend_prefix = false)
       full_name = config_name(container, name, backend_prefix)
       self.logger.debug "Lookup #{name} in #{container.name} by #{full_name}"
 
       config = self.definitions[full_name]
       raise ConfigNotFoundError, "Can't find declared api for #{full_name} in #{container}" unless config
       const = config.to_object(container)
-      if container == ::Joowing
+      if container == ::Scenery
         warn <<-WARN
-          !!! You should access Joowing::#{full_name.classify} by #{config.backend.to_s.classify}::#{full_name.classify} to improve maintainability and code readability !!!
-          !!! And you just need to remove all gem dependencies for #{config.backend}_api and don't use Joowing::Xxx !!!
+          !!! You should access Scenery::#{full_name.classify} by #{config.backend.to_s.classify}::#{full_name.classify} to improve maintainability and code readability !!!
+          !!! And you just need to remove all gem dependencies for #{config.backend}_api and don't use Scenery::Xxx !!!
         WARN
       end
       const
@@ -177,10 +177,10 @@ module JoowingRmi
     #
     # == 增强特定的backend, 让外部,甚至是其自己,可以通过
     #  PomeloBackend::Promotion 这样来访问自己的定义的API对象
-    #  而不仅仅是通过无差异,无个性的 Joowing::Promotion这样访问远程API对象
+    #  而不仅仅是通过无差异,无个性的 Scenery::Promotion这样访问远程API对象
     #  这样可以使业务代码更加易读,易理解,易维护;
     #
-    # 否则, 开发人员在review代码的时候, 看到Joowing::Xxx对象的调用时, 总要通过其他手段来Review是否已经定义过
+    # 否则, 开发人员在review代码的时候, 看到Scenery::Xxx对象的调用时, 总要通过其他手段来Review是否已经定义过
     #
     # @param class_name: 类似于 PomeloBackend 这样的字符串
     # @param backend: 类似于 :pomelo_backend 这样的符号
@@ -199,7 +199,7 @@ module JoowingRmi
       rescue NameError
         # 一般, 对外部系统, 并没有相应的常量, 我们默认将其定义为module
         # 如果外部有需求, 不为module, 则应该在应用层自行先定义
-        # 而且, 还要确保在JoowingRMI相应的API加载之前加载
+        # 而且, 还要确保在SceneryRMI相应的API加载之前加载
         # 或者, 应用层应该取一个另外的名字
         target = Object.const_set class_name, Module.new
         verb = 'Define'
@@ -222,10 +222,10 @@ module JoowingRmi
       # 重写Target这个类的const_missing方法
       # 更好的写法, 应该用 alias method chain的方式增强 const_missing
       def target.const_missing(name)
-        app = JoowingRmi::Manager.application
+        app = SceneryRmi::Manager.application
         begin
           # 先尝试在本地查找, 因为可能在上级模块定义时, 已经把子对象的定义也加载了
-          const = app.joowing_autoload(self, name, true)
+          const = app.scenery_autoload(self, name, true)
           app.notify_observers(const)
           const
         rescue ConfigNotFoundError
@@ -233,7 +233,7 @@ module JoowingRmi
           config_name = app.config_name(self, name, true)
           self.rmi_logger.info("Loading #{name} DSL from #{self.backend} by #{config_name}")
           # 采用动态API的技术, 向远程发起加载API定义的请求
-          response = JoowingRmi::Runtime.load_dsl(config_name)
+          response = SceneryRmi::Runtime.load_dsl(config_name)
           message = response.body.to_s
           if response.success?
             begin
@@ -245,7 +245,7 @@ module JoowingRmi
               raise NameError, "#{e.message} occurred from #{self.backend}.#{config_name} by eval:\n #{message}"
             end
             begin
-              const = app.joowing_autoload(self, name, true)
+              const = app.scenery_autoload(self, name, true)
               raise NameError, "No corresponding API object defined by:\n#{message}" unless const # 远程获取的dsl内容可能名不符实
               # 再次对衍生加载出来的常量进行增强
               app.inject_load_from_remote(const, self.backend)
@@ -276,7 +276,7 @@ module JoowingRmi
 
     def look_for_backend(name)
       name = name.to_s
-      # 移除nebula这个joowing rmi配置项
+      # 移除nebula这个scenery rmi配置项
       name = 'mango_portal' if name == 'nebula'
       name.split('.').inject(@config[:backend]) do |tree_config, one|
         return nil if tree_config.nil?

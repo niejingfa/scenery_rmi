@@ -1,13 +1,13 @@
 #encoding: utf-8
-module JoowingRmi
+module SceneryRmi
   class Entity < Grape::Entity
     module Helper
-      require 'joowing_rmi/entity/helper/entity_accessor'
-      require 'joowing_rmi/entity/helper/controller_helper'
+      require 'scenery_rmi/entity/helper/entity_accessor'
+      require 'scenery_rmi/entity/helper/controller_helper'
     end
 
-    include JoowingRmi::Entity::Helper::EntityAccessor
-    include JoowingRmi::Entity::Helper::ControllerHelper
+    include SceneryRmi::Entity::Helper::EntityAccessor
+    include SceneryRmi::Entity::Helper::ControllerHelper
     include ActionView::Helpers::OutputSafetyHelper rescue nil
     include ActionView::Helpers::TagHelper rescue nil
     include ActionView::Helpers::CaptureHelper rescue nil

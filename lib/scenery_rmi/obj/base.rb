@@ -1,6 +1,6 @@
 #encoding: utf-8
 require 'active_support/all'
-module JoowingRmi::Obj
+module SceneryRmi::Obj
   module Base
     extend ActiveSupport::Concern
 
@@ -15,12 +15,12 @@ module JoowingRmi::Obj
       end
 
       def manager
-        JoowingRmi::Manager.application
+        SceneryRmi::Manager.application
       end
 
       # @Overload
       def connection(refresh = false)
-        @connection ||= JoowingRmi::Connection.new(self, self.site, format)
+        @connection ||= SceneryRmi::Connection.new(self, self.site, format)
         # if defined?(@connection) || superclass == Object
         #   @connection =  if refresh || @connection.nil?
         #   @connection.proxy = proxy if proxy
@@ -44,7 +44,7 @@ module JoowingRmi::Obj
           @backend = name
           backend_uri = manager.look_for_backend(name)
           if backend_uri.nil?
-            return JoowingRmi::Manager.application.logger.info( "Try to find #{name}, but not found, skip")
+            return SceneryRmi::Manager.application.logger.info( "Try to find #{name}, but not found, skip")
           end
 
           self.site = backend_uri
@@ -87,7 +87,7 @@ module JoowingRmi::Obj
       end
 
       def query(opt = {})
-        JoowingRmi::Origin.new(self).query(opt)
+        SceneryRmi::Origin.new(self).query(opt)
       end
       
       def paginate(opt = {}, page_opt = {})
@@ -304,7 +304,7 @@ module JoowingRmi::Obj
     # 重载默认的api
     def create_resource_for(resource_name)
       resource = self.class.const_set(resource_name, Class.new(ActiveResource::Base))
-      resource.send(:include, JoowingRmi::Obj::Base)
+      resource.send(:include, SceneryRmi::Obj::Base)
       resource.prefix = self.class.prefix
       resource.site   = self.class.site
       resource.serialize_with_root = false

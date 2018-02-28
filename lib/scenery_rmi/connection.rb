@@ -1,5 +1,5 @@
 #encoding: utf-8
-module JoowingRmi
+module SceneryRmi
   module ConnectionExtension
 
     mattr_accessor :call_entries
@@ -9,17 +9,17 @@ module JoowingRmi
       headers = super(headers, http_method, uri)
       # XRequest 记录了当前线程上下文的外部请求信息(env)
       if XRequest.env
-        # 跨joowing rmi传递唯一性请求id, 便于跨多个服务进程追踪用户请求
+        # 跨scenery rmi传递唯一性请求id, 便于跨多个服务进程追踪用户请求
         headers['X-Request-Id'] = XRequest.request_id || ''
-        # 跨joowing rmi传递Accept-Language,便于后台直接输出前台需要的国际化信息（如错误）
+        # 跨scenery rmi传递Accept-Language,便于后台直接输出前台需要的国际化信息（如错误）
         headers['Accept-Language'] = XRequest.env['HTTP_ACCEPT_LANGUAGE'] || 'zh'
         # 跨进程追踪用户会话
-        # 用户a向系统X发起请求，系统X通过joowing rmi向系统Y发起请求
-        # 此时，系统X将用户的session_id也在这个joowing rmi的请求头里面传递
+        # 用户a向系统X发起请求，系统X通过scenery rmi向系统Y发起请求
+        # 此时，系统X将用户的session_id也在这个scenery rmi的请求头里面传递
         headers['Cookie'] = "_session_id=#{XRequest.session_id}" if XRequest.session_id
       end
       begin
-        backend = JoowingRmi::Manager.backend || 'unknown'
+        backend = SceneryRmi::Manager.backend || 'unknown'
         locations = caller_locations
         index = locations.find_index do |cl|
           ConnectionExtension.call_entries.include?(cl.base_label)
@@ -33,7 +33,7 @@ module JoowingRmi
         end
         headers['HTTP-REFERER'] = "#{backend}://#{location}"
       rescue Exception => e
-        JoowingRmi::Manager.application.logger.warn(e)
+        SceneryRmi::Manager.application.logger.warn(e)
       end
       headers
     end
@@ -49,9 +49,9 @@ module JoowingRmi
           error = JSON.parse response.body
           if error.is_a?(Hash)
             if  error['class'] && error['ancestors']
-              # 这是joowing rmi 原先的机制
+              # 这是scenery rmi 原先的机制
               ancestors = error['ancestors']
-              error_class = Joowing::Error
+              error_class = Scenery::Error
               # 生成或者访问到动态错误类
               ancestors.split(',').each { |const_name| error_class = error_class.const_get(const_name) }
               exception = error_class.new(error['message'], error['code'], error['args'])
@@ -61,7 +61,7 @@ module JoowingRmi
             elsif error['status'] && error['error'] && error['exception']
               # 这是Rails 5的新机制
               msg = '%s occurred while call `%s` to "%s"' % [error['exception'], self.klass.backend, self.site.to_s]
-              exception = Joowing::Error.new(msg, error['error'], status: error['status'])
+              exception = Scenery::Error.new(msg, error['error'], status: error['status'])
               traces = error['traces']
               if traces and traces['Full Trace']
                 backtrace = traces['Full Trace'].map{|item| item['trace']}
@@ -192,7 +192,7 @@ module JoowingRmi
     def request(method, path, *arguments)
       request_uri = build_uri(path)
       result = ActiveSupport::Notifications.instrument('request.active_resource') do |payload|
-        http = JoowingRmi::ConnectionManager.manager.connection_pool(@klass.backend)
+        http = SceneryRmi::ConnectionManager.manager.connection_pool(@klass.backend)
         payload[:method]      = method
         payload[:request_uri] = request_uri.to_s
         begin
@@ -208,8 +208,8 @@ module JoowingRmi
       handle_response(result)
     rescue OpenSSL::SSL::SSLError => e
       raise ActiveResource::SSLError.new(e.message)
-    rescue CustomException, BuzException, Joowing::Error => e
-      JoowingRmi::Manager.application.logger.error(e.backtrace.join('\n'))
+    rescue CustomException, BuzException, Scenery::Error => e
+      SceneryRmi::Manager.application.logger.error(e.backtrace.join('\n'))
       raise e
     rescue StandardError => e
       begin
@@ -221,7 +221,7 @@ module JoowingRmi
       end
       message = e.to_s if message.blank?
       args = {status:status, request_uri: request_uri, collection_name: @klass.collection_name}
-      raise Joowing::RemoteError.new(message, @klass.backend.to_s.upcase, args, e.backtrace)
+      raise Scenery::RemoteError.new(message, @klass.backend.to_s.upcase, args, e.backtrace)
     end
 
     # Handles response and error codes from the remote service.

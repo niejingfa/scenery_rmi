@@ -1,6 +1,6 @@
 #encoding: utf-8
 require 'rubygems'
-require 'joowing_rmi/version'
+require 'scenery_rmi/version'
 require 'delegate'
 require 'fileutils'
 require 'digest'
@@ -14,25 +14,25 @@ require 'will_paginate'
 require 'will_paginate/collection'
 require 'faraday'
 
-module JoowingRmi
-  require 'joowing_rmi/erb_yaml'
-  require 'joowing_rmi/http_pool'
-  require 'joowing_rmi/entity'
-  require 'joowing_rmi/origin'
-  require 'joowing_rmi/connection_manager'
-  require 'joowing_rmi/connection'
-  require 'joowing_rmi/manager'
-  require 'joowing_rmi/x_request'
-  require 'joowing_rmi/runtime'
-  require 'joowing_rmi/faraday_response'
+module SceneryRmi
+  require 'scenery_rmi/erb_yaml'
+  require 'scenery_rmi/http_pool'
+  require 'scenery_rmi/entity'
+  require 'scenery_rmi/origin'
+  require 'scenery_rmi/connection_manager'
+  require 'scenery_rmi/connection'
+  require 'scenery_rmi/manager'
+  require 'scenery_rmi/x_request'
+  require 'scenery_rmi/runtime'
+  require 'scenery_rmi/faraday_response'
 
 
   module Definition
-    require 'joowing_rmi/definition/dsl'
-    require 'joowing_rmi/definition/module_definition'
-    require 'joowing_rmi/definition/class_definition'
-    require 'joowing_rmi/definition/attribute_definition'
-    require 'joowing_rmi/definition/action_definition'
+    require 'scenery_rmi/definition/dsl'
+    require 'scenery_rmi/definition/module_definition'
+    require 'scenery_rmi/definition/class_definition'
+    require 'scenery_rmi/definition/attribute_definition'
+    require 'scenery_rmi/definition/action_definition'
   end
 
   module Ext
@@ -50,9 +50,9 @@ module JoowingRmi
   class << self
 
     def initialize_rmi(backend = nil)
-      backend ||= JoowingRmi.joowing_platform_spec['name']
-      config = JoowingRmi.joowing_platform_spec['joowing_rmi']
-      raise "There is no joowing_rmi config for #{ENV['RACK_ENV'] || ENV['RAILS_ENV'] } env in config/joowing_platform.yml" unless config
+      backend ||= SceneryRmi.scenery_platform_spec['name']
+      config = SceneryRmi.scenery_platform_spec['scenery_rmi']
+      raise "There is no scenery_rmi config for #{ENV['RACK_ENV'] || ENV['RAILS_ENV'] } env in config/scenery_platform.yml" unless config
       Manager.application ||= Manager.new(config)
       if backend
         Manager.backend = backend
@@ -73,12 +73,12 @@ module JoowingRmi
 
     def define_rmi_class(name, &blk)
       c = Class.new(ActiveResource::Base)
-      c.send(:include, JoowingRmi::Obj::Base)
+      c.send(:include, SceneryRmi::Obj::Base)
       blk.call(c) if blk
-      JoowingRmi::Obj.const_set(name, c)
+      SceneryRmi::Obj.const_set(name, c)
     end
 
-    # 在特定用户session上下文中执行joowing rmi请求
+    # 在特定用户session上下文中执行scenery rmi请求
     def with_session(session_id)
       xid = XRequest::X_SESSION_ID
       env = XRequest.env
@@ -109,12 +109,12 @@ module JoowingRmi
     end
 
     #
-    # == 提供给joowing_api/xxx_api等gem注册dsl的方法
+    # == 提供给scenery_api/xxx_api等gem注册dsl的方法
     #
     # @param folder: 需要进行扫描的dsl所在目录，支持多层目录
     #
     def scan(folder)
-      JoowingRmi.after_initialize do |manager|
+      SceneryRmi.after_initialize do |manager|
         files = Dir.glob(File.join(folder, '**/*.rb'))
         files.sort! # ensure parent file is previous than sub module files
         files.each do |file|
@@ -128,16 +128,16 @@ module JoowingRmi
     # 系统启动后, 通过Redis的消息, 发布特定目录所有的api版本信息
     #  以便通知所有依赖相应API的系统, 确定是否要进行API对象Reload
     def publish(folder)
-      JoowingRmi.after_initialize do |manager|
+      SceneryRmi.after_initialize do |manager|
         redis = Redis.new(manager.config[:redis].symbolize_keys)
-        redis.call 'client', 'setname', "joowing_rmi_publisher_of_#{$$}" rescue nil
+        redis.call 'client', 'setname', "scenery_rmi_publisher_of_#{$$}" rescue nil
         files = Dir.glob(File.join(folder, '**/*.rb'))
         files.sort! # ensure parent file is previous than sub module files
         files.each do |file|
           name = file[folder.length + 1 .. -4] # -4: remove .rb
           names = name.split('/')
-          names.unshift JoowingRmi::Manager.backend
-          names.unshift 'joowing_rmi'
+          names.unshift SceneryRmi::Manager.backend
+          names.unshift 'scenery_rmi'
           name = names.join('.')
           version = Digest::MD5.hexdigest(IO.read(file))
           redis.publish name, version
@@ -146,30 +146,30 @@ module JoowingRmi
       end
     end
 
-    def joowing_platform_spec
+    def scenery_platform_spec
       @spec ||= begin
-        platform = ErbYaml.load File.new('config/joowing_platform.yml')
+        platform = ErbYaml.load File.new('config/scenery_platform.yml')
         platform && platform[ENV['RAILS_ENV'] || ENV['RACK_ENV'] || 'development']
       rescue
-        {'name' => 'unknown', 'joowing_rmi' => {}}
+        {'name' => 'unknown', 'scenery_rmi' => {}}
       end
     end
 
   end
 
   module Obj
-    require 'joowing_rmi/obj/base'
+    require 'scenery_rmi/obj/base'
   end
 end
 
-# Make the Joowing RMI DSL available in main
+# Make the Scenery RMI DSL available in main
 # OPTIMIZE it with context object
-include JoowingRmi::Definition::DSL
+include SceneryRmi::Definition::DSL
 
-def joowing_rmi_initialize
-  require 'joowing'
-  app = JoowingRmi::Manager.application
-  # when it's trigger by ActiveSupport Reloader, previous than the JoowingRmi.initialize_rmi
+def scenery_rmi_initialize
+  require 'scenery'
+  app = SceneryRmi::Manager.application
+  # when it's trigger by ActiveSupport Reloader, previous than the SceneryRmi.initialize_rmi
   return unless app
   app.backends.clear
   app.initialize_backend_constants
@@ -177,8 +177,8 @@ end
 
 if defined?(ActiveSupport::Reloader)
   ActiveSupport::Reloader.to_prepare do
-    silence_warnings { joowing_rmi_initialize }
+    silence_warnings { scenery_rmi_initialize }
   end
 end
 
-JoowingRmi.after_initialize { joowing_rmi_initialize }
+SceneryRmi.after_initialize { scenery_rmi_initialize }

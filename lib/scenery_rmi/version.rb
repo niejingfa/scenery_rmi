@@ -1,4 +1,4 @@
-module JoowingRmi
+module SceneryRmi
   unless self.respond_to?(:silence_warnings)
     def self.silence_warnings
       old_verbose, $VERBOSE = $VERBOSE, nil

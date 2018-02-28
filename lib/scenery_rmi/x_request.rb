@@ -1,20 +1,20 @@
 #encoding: utf-8
 
-module JoowingRmi
+module SceneryRmi
   #
-  # =Joowing 跨进程请求扩展机制
+  # =Scenery 跨进程请求扩展机制
   #
   #    # 普通后台服务程序: config.ru
-  #      use JoowingRmi::XRequest
+  #      use SceneryRmi::XRequest
   #
   #    # Rails程序: config/application.rb
-  #      config.middleware.insert_after ActionDispatch::RequestId, JoowingRmi::XRequest
+  #      config.middleware.insert_after ActionDispatch::RequestId, SceneryRmi::XRequest
   #
   # 这个类实现了3个功能:
   #   1. 在线程上下文保存了外部请求env信息
-  #   2. 在env中设置了joowing.x_request_id(兼容Rails生成的)
+  #   2. 在env中设置了scenery.x_request_id(兼容Rails生成的)
   #   3. 跨进程时，记录了跟踪并保持了用户的会话id
-  # 配合JoowingRMI Connection对象,可以将请求id, 用户preference跨服务进程传递
+  # 配合SceneryRMI Connection对象,可以将请求id, 用户preference跨服务进程传递
   #
   # 备注:
   #   这2个功能违反了一般的单一职责原则,
@@ -26,10 +26,10 @@ module JoowingRmi
       X_REQUEST_KEY = :x_request_env
     end
     unless defined?(X_REQUEST_ID)
-      X_REQUEST_ID = 'joowing.x.request_id'
+      X_REQUEST_ID = 'scenery.x.request_id'
     end
     unless defined?(X_SESSION_ID)
-      X_SESSION_ID = 'joowing.x.session_id'
+      X_SESSION_ID = 'scenery.x.session_id'
     end
 
     attr_reader :app, :key
@@ -87,4 +87,4 @@ module JoowingRmi
     end
 
   end # class XRequest
-end # module JoowingRmi
+end # module SceneryRmi

@@ -1,5 +1,5 @@
 #encoding: utf-8
-module JoowingRmi
+module SceneryRmi
   module Definition
     class JHash < ::Hash
       def initialize(*args)
@@ -35,7 +35,7 @@ module JoowingRmi
         end
 
         def _convert(value, type)
-          # To compatible with old joowing_rmi,
+          # To compatible with old scenery_rmi,
           #  don't convert string to int/float
           #  treat datetime as string
           case type
@@ -107,7 +107,7 @@ module JoowingRmi
         first = @underscore_class_name.first
         # 这个往往只有遗留形态的代码会这样
         if first.to_s == self.backend.to_s
-          @underscore_class_name.unshift('joowing')
+          @underscore_class_name.unshift('scenery')
         else
           @underscore_class_name.unshift(self.backend)
         end
@@ -247,7 +247,7 @@ module JoowingRmi
 
       def to_object(container)
         constant = Class.new(ActiveResource::Base) do
-          include JoowingRmi::Obj::Base
+          include SceneryRmi::Obj::Base
           class_attribute :class_definition
 
           def respond_to?(attr, include_private=false)
@@ -263,22 +263,22 @@ module JoowingRmi
             end
 
             def logger
-              @joowing_logger
+              @scenery_logger
             end
 
             def logger=(other)
-              @joowing_logger = other
+              @scenery_logger = other
             end
 
           end
         end
 
         container.const_set(self.name.to_s.classify, constant).tap do |real_klass|
-          ext_name = real_klass.name.gsub(/^(?:Joowing|#{self.backend.to_s.classify})::/, 'JoowingRmi::Ext::')
+          ext_name = real_klass.name.gsub(/^(?:Scenery|#{self.backend.to_s.classify})::/, 'SceneryRmi::Ext::')
           begin
             require ext_name.underscore
             real_klass.send :include, ext_name.constantize
-            JoowingRmi::Manager.application.logger.debug("Mixin: #{ext_name}")
+            SceneryRmi::Manager.application.logger.debug("Mixin: #{ext_name}")
           rescue LoadError
             # ignore
           rescue NameError
@@ -319,8 +319,8 @@ module JoowingRmi
           self.attributes.each do |attr|
             if attr.type.is_a? String
               begin
-                if attr.type.start_with?('Joowing') or
-                    attr.type.start_with?('::Joowing') or
+                if attr.type.start_with?('Scenery') or
+                    attr.type.start_with?('::Scenery') or
                     attr.type.start_with?(self.backend.classify) or
                     attr.type.start_with?('::' + self.backend.classify)
                   one_klass = constantize(attr.type)
@@ -366,7 +366,7 @@ module JoowingRmi
         tags.unshift 'rmi'
         tags << self.name.to_s
         # 不能用AssignFor, 因为继承了ActiveResource::Base, 实际assign到父类上;从而各个子类共享了
-        constant.logger = JoowingLogger.allocate(tags)
+        constant.logger = SceneryLogger.allocate(tags)
 
         constant
       end

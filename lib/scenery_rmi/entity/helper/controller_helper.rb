@@ -1,6 +1,6 @@
 #encoding: utf-8
-require 'joowing_rmi/entity/helper/locale'
-module JoowingRmi::Entity::Helper
+require 'scenery_rmi/entity/helper/locale'
+module SceneryRmi::Entity::Helper
   module ControllerHelper
     attr_accessor :_jrmi_controller, :_jrmi_request
 
@@ -14,7 +14,7 @@ module JoowingRmi::Entity::Helper
     attr_accessor :output_buffer
 
     def self.included(model)
-      model.send(:include, ::JoowingRmi::Entity::Helper::Locale)
+      model.send(:include, ::SceneryRmi::Entity::Helper::Locale)
     end
   end
 end

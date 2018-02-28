@@ -1,5 +1,5 @@
 # encoding: utf-8
-module JoowingRmi::Entity::Helper
+module SceneryRmi::Entity::Helper
   module Locale
     module Base
       def view_resource(id, index = nil)

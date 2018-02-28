@@ -3,7 +3,7 @@ require 'erb'
 require 'yaml'
 require 'ostruct'
 
-module JoowingRmi
+module SceneryRmi
   module ErbYaml
     # 会运行其中erb的数据
     # erb中, 可以直接引用其 variables 下面的key为变量
